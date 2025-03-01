@@ -21,13 +21,13 @@
 
 ## Feature Importance
                   Feature  Importance
-0         gdp_growth_rate    0.432944
-3  growth_inflation_ratio    0.146464
-2         economic_health    0.143360
-1          inflation_rate    0.128742
-6       gdp_growth_change    0.063337
-5          prev_inflation    0.043406
-4         prev_gdp_growth    0.041748
+         0         gdp_growth_rate    0.432944
+         3  growth_inflation_ratio    0.146464
+         2         economic_health    0.143360
+         1          inflation_rate    0.128742
+         6       gdp_growth_change    0.063337
+         5          prev_inflation    0.043406
+         4         prev_gdp_growth    0.041748
 
 ## Country Analysis
 - Countries with highest percentage of booming years: China, Korea, Rep., India
