@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economic Model Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .chart-container {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="dashboard-header">
+        <h1 class="text-4xl font-bold text-center">Economic Model Visualizer</h1>
+        <p class="text-center mt-2 opacity-90">Analyzing GDP growth and inflation across major economies (2000-2023)</p>
+    </div>
+    
+    <div class="container mx-auto px-4 py-8">
+        <!-- Dashboard Controls -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <label for="countrySelector" class="block text-sm font-medium text-gray-700 mb-1">Select Country:</label>
+                    <select id="countrySelector" class="border rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
+                        <option value="">Loading countries...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="yearRangeFilter" class="block text-sm font-medium text-gray-700 mb-1">Year Range:</label>
+                    <div class="flex items-center gap-2">
+                        <span id="yearRangeStart">2000</span>
+                        <input type="range" id="yearRangeFilter" min="2000" max="2023" value="2023" class="w-48">
+                        <span id="yearRangeEnd">2023</span>
+                    </div>
+                </div>
+                <div>
+                    <label for="viewToggle" class="block text-sm font-medium text-gray-700 mb-1">View Mode:</label>
+                    <div class="flex gap-2">
+                        <button id="btnChartView" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Charts</button>
+                        <button id="btnDataView" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Data Table</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts View -->
+        <div id="chartsView">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Economic Status Overview -->
+                <div class="chart-container bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Economic Status by Country</h2>
+                    <div class="h-80">
+                        <canvas id="economicStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- GDP Growth Trends -->
+                <div class="chart-container bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">GDP Growth vs Inflation Trends</h2>
+                    <div class="h-80">
+                        <canvas id="gdpTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Inflation vs Growth -->
+                <div class="chart-container bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Inflation vs GDP Growth</h2>
+                    <div class="h-80">
+                        <canvas id="scatterChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Economic Classification -->
+                <div class="chart-container bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Economy Classification</h2>
+                    <div class="h-80 overflow-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booming Years</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shrinking Years</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stable Years</th>
+                                </tr>
+                            </thead>
+                            <tbody id="economyTable" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">
+                                        <div class="loading">
+                                            <div class="loading-spinner"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Insights Section -->
+            <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Key Insights</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 border rounded-lg bg-blue-50">
+                        <h3 class="font-semibold text-lg text-blue-800">Top Booming Economy</h3>
+                        <div id="topBoomingEconomy" class="text-2xl font-bold mt-2">Loading...</div>
+                        <p class="text-sm text-gray-600 mt-1">Highest % of years with robust growth</p>
+                    </div>
+                    <div class="p-4 border rounded-lg bg-red-50">
+                        <h3 class="font-semibold text-lg text-red-800">Most Volatile Economy</h3>
+                        <div id="mostVolatileEconomy" class="text-2xl font-bold mt-2">Loading...</div>
+                        <p class="text-sm text-gray-600 mt-1">Highest swings between growth and shrinkage</p>
+                    </div>
+                    <div class="p-4 border rounded-lg bg-green-50">
+                        <h3 class="font-semibold text-lg text-green-800">Most Stable Growth</h3>
+                        <div id="mostStableEconomy" class="text-2xl font-bold mt-2">Loading...</div>
+                        <p class="text-sm text-gray-600 mt-1">Lowest standard deviation in GDP growth</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Table View (Hidden initially) -->
+        <div id="dataTableView" class="bg-white p-6 rounded-lg shadow-md hidden">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Economic Data Table</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GDP Growth (%)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inflation (%)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Economic Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fullDataTable" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="loading">
+                                    <div class="loading-spinner"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="mt-8 text-center text-gray-500 text-sm">
+            <p>© 2025 Economic Model Visualizer | Based on World Bank data from 2000-2023</p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let globalData = null;
+        let globalStats = null;
+        
+        // Load data and initialize charts
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const [countries, economicData, stats] = await Promise.all([
+                    fetch('/api/countries').then(res => res.json()),
+                    fetch('/api/data').then(res => res.json()),
+                    fetch('/api/stats').then(res => res.json())
+                ]);
+                
+                // Store data globally
+                globalData = economicData;
+                globalStats = stats;
+
+                // Populate country selector
+                const countrySelector = document.getElementById('countrySelector');
+                countrySelector.innerHTML = '';
+                countries.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country;
+                    option.textContent = country;
+                    countrySelector.appendChild(option);
+                });
+
+                // Initialize GDP trend chart for first country
+                const selectedCountry = countries[0];
+                createGdpTrendChart(selectedCountry, economicData);
+
+                // Create economic status overview chart
+                createEconomicStatusChart(stats);
+
+                // Create scatter plot for all countries
+                createScatterChart(economicData);
+
+                // Populate economy table
+                populateEconomyTable(stats);
+                
+                // Populate full data table
+                populateFullDataTable(economicData);
+                
+                // Generate insights
+                generateInsights(stats, economicData);
+
+                // Add event listeners
+                countrySelector.addEventListener('change', (e) => {
+                    createGdpTrendChart(e.target.value, economicData);
+                });
+                
+                document.getElementById('yearRangeFilter').addEventListener('input', (e) => {
+                    document.getElementById('yearRangeEnd').textContent = e.target.value;
+                });
+                
+                document.getElementById('btnChartView').addEventListener('click', () => {
+                    document.getElementById('chartsView').classList.remove('hidden');
+                    document.getElementById('dataTableView').classList.add('hidden');
+                    document.getElementById('btnChartView').classList.remove('bg-gray-200', 'text-gray-700');
+                    document.getElementById('btnChartView').classList.add('bg-blue-600', 'text-white');
+                    document.getElementById('btnDataView').classList.remove('bg-blue-600', 'text-white');
+                    document.getElementById('btnDataView').classList.add('bg-gray-200', 'text-gray-700');
+                });
+                
+                document.getElementById('btnDataView').addEventListener('click', () => {
+                    document.getElementById('chartsView').classList.add('hidden');
+                    document.getElementById('dataTableView').classList.remove('hidden');
+                    document.getElementById('btnDataView').classList.remove('bg-gray-200', 'text-gray-700');
+                    document.getElementById('btnDataView').classList.add('bg-blue-600', 'text-white');
+                    document.getElementById('btnChartView').classList.remove('bg-blue-600', 'text-white');
+                    document.getElementById('btnChartView').classList.add('bg-gray-200', 'text-gray-700');
+                });
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.querySelectorAll('.loading').forEach(el => {
+                    el.innerHTML = '<p class="text-red-500">Error loading data. Please refresh the page.</p>';
+                });
+            }
+        });
+
+        // Fix for GDP Growth vs Inflation Trends chart
+        function createGdpTrendChart(country, data) {
+            try {
+                console.log("Creating GDP trend chart for:", country);
+                
+                // Add this line to debug data structure
+                debugDataStructure(data);
+                
+                const years = data.years || [];
+                const gdpValues = [];
+                const inflationValues = [];
+                
+                // Process data with corrected structure handling
+                years.forEach(year => {
+                    // Try multiple ways to access the data
+                    let gdp = null;
+                    let inf = null;
+                    
+                    // First check if data structure is year->country
+                    if (data.gdp_growth && data.gdp_growth[year]) {
+                        gdp = data.gdp_growth[year][country];
+                    }
+                    
+                    // Then check if it's country->year
+                    if (gdp === undefined || gdp === null) {
+                        if (data.gdp_growth && data.gdp_growth[country]) {
+                            gdp = data.gdp_growth[country][year];
+                        }
+                    }
+                    
+                    // Same for inflation
+                    if (data.inflation && data.inflation[year]) {
+                        inf = data.inflation[year][country];
+                    }
+                    
+                    if (inf === undefined || inf === null) {
+                        if (data.inflation && data.inflation[country]) {
+                            inf = data.inflation[country][year];
+                        }
+                    }
+                    
+                    gdpValues.push(gdp);
+                    inflationValues.push(inf);
+                });
+
+                console.log(`Data points found for ${country}: GDP=${gdpValues.filter(v => v !== null && v !== undefined).length}, Inflation=${inflationValues.filter(v => v !== null && v !== undefined).length}`);
+                
+                // Rest of your chart creation code...
+            }
+            catch (error) {
+                console.error("Error creating GDP trend chart:", error);
+            }
+        }
+
+        function createEconomicStatusChart(stats) {
+            const countries = Object.keys(stats.booming_pct).slice(0, 10); // limit to top 10 for readability
+            const boomingData = countries.map(c => stats.booming_pct[c]);
+            const shrinkingData = countries.map(c => stats.shrinking_pct[c]);
+            const stableData = countries.map(c => 100 - boomingData[countries.indexOf(c)] - shrinkingData[countries.indexOf(c)]);
+
+            const ctx = document.getElementById('economicStatusChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: countries,
+                    datasets: [
+                        {
+                            label: 'Booming',
+                            data: boomingData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                        },
+                        {
+                            label: 'Stable',
+                            data: stableData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        },
+                        {
+                            label: 'Shrinking',
+                            data: shrinkingData,
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            title: {
+                                display: true,
+                                text: 'Percentage (%)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label;
+                                    const value = context.parsed.y.toFixed(1) + '%';
+                                    return `${label}: ${value}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createScatterChart(data) {
+            try {
+                const scatterData = [];
+                const ctx = document.getElementById('scatterChart').getContext('2d');
+                
+                // Destroy the existing chart if it exists
+                if (window.scatterChart instanceof Chart) {
+                    window.scatterChart.destroy();
+                }
+                
+                if (data.countries && data.years && data.gdp_growth && data.inflation && data.economic_status) {
+                    data.countries.forEach(country => {
+                        data.years.forEach(year => {
+                            // Convert year to string if it's a number
+                            const yearKey = typeof year === 'number' ? year.toString() : year;
+                            const gdp = data.gdp_growth[yearKey]?.[country];
+                            const inf = data.inflation[yearKey]?.[country];
+                            const status = data.economic_status[yearKey]?.[country];
+                            
+                            if (gdp !== undefined && gdp !== null && inf !== undefined && inf !== null) {
+                                scatterData.push({
+                                    x: gdp,
+                                    y: inf,
+                                    country: country,
+                                    year: year,
+                                    status: status || 'unknown'
+                                });
+                            }
+                        });
+                    });
+
+                    // Group data by status
+                    const boomingData = scatterData.filter(d => d.status === 'booming');
+                    const stableData = scatterData.filter(d => d.status === 'stable');
+                    const shrinkingData = scatterData.filter(d => d.status === 'shrinking');
+                    const unknownData = scatterData.filter(d => 
+                        d.status !== 'booming' && d.status !== 'stable' && d.status !== 'shrinking');
+
+                    // Create the new chart
+                    window.scatterChart = new Chart(ctx, {
+                        type: 'scatter',
+                        data: {
+                            datasets: [{
+                                label: 'Booming',
+                                data: boomingData,
+                                backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                            }, {
+                                label: 'Stable',
+                                data: stableData,
+                                backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                            }, {
+                                label: 'Shrinking',
+                                data: shrinkingData,
+                                backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                            }, {
+                                label: 'Unknown',
+                                data: unknownData,
+                                backgroundColor: 'rgba(180, 180, 180, 0.8)',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: (context) => {
+                                            const point = context.raw;
+                                            return `${point.country} (${point.year}): GDP ${point.x.toFixed(1)}%, Inf ${point.y.toFixed(1)}%`;
+                                        }
+                                    }
+                                },
+                                legend: {
+                                    position: 'top',
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    suggestedMin: -5,
+                                    suggestedMax: 10,
+                                    title: {
+                                        display: true,
+                                        text: 'GDP Growth Rate (%)'
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)'
+                                    }
+                                },
+                                y: {
+                                    suggestedMin: 0,
+                                    suggestedMax: 15,
+                                    title: {
+                                        display: true,
+                                        text: 'Inflation Rate (%)'
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    // Display error message if data is missing
+                    ctx.canvas.style.display = 'none';
+                    const container = ctx.canvas.parentNode;
+                    if (!container.querySelector('.error-message')) {
+                        const errorMessage = document.createElement('p');
+                        errorMessage.className = 'error-message text-red-500 text-center mt-10';
+                        errorMessage.textContent = 'Cannot create scatter plot: missing data';
+                        container.appendChild(errorMessage);
+                    }
+                }
+            } catch (error) {
+                console.error('Error creating scatter chart:', error);
+                const ctx = document.getElementById('scatterChart');
+                ctx.style.display = 'none';
+                const container = ctx.parentNode;
+                if (!container.querySelector('.error-message')) {
+                    const errorMessage = document.createElement('p');
+                    errorMessage.className = 'error-message text-red-500 text-center mt-10';
+                    errorMessage.textContent = 'Error creating scatter plot';
+                    container.appendChild(errorMessage);
+                }
+            }
+        }
+
+        function populateEconomyTable(stats) {
+            const tableBody = document.getElementById('economyTable');
+            tableBody.innerHTML = '';
+            
+            Object.keys(stats.total).forEach(country => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                const nameCell = document.createElement('td');
+                nameCell.className = 'px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900';
+                nameCell.textContent = country;
+                
+                const boomingCell = document.createElement('td');
+                boomingCell.className = 'px-6 py-4 whitespace-nowrap text-sm text-green-600';
+                boomingCell.textContent = `${stats.booming[country] || 0} (${stats.booming_pct[country] || 0}%)`;
+                
+                const shrinkingCell = document.createElement('td');
+                shrinkingCell.className = 'px-6 py-4 whitespace-nowrap text-sm text-red-600';
+                shrinkingCell.textContent = `${stats.shrinking[country] || 0} (${stats.shrinking_pct[country] || 0}%)`;
+                
+                const stableCell = document.createElement('td');
+                stableCell.className = 'px-6 py-4 whitespace-nowrap text-sm text-blue-600';
+                const stableCount = stats.total[country] - (stats.booming[country] || 0) - (stats.shrinking[country] || 0);
+                const stablePct = (100 - (stats.booming_pct[country] || 0) - (stats.shrinking_pct[country] || 0)).toFixed(1);
+                stableCell.textContent = `${stableCount} (${stablePct}%)`;
+                
+                row.appendChild(nameCell);
+                row.appendChild(boomingCell);
+                row.appendChild(shrinkingCell);
+                row.appendChild(stableCell);
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function populateFullDataTable(data) {
+            const tableBody = document.getElementById('fullDataTable');
+            tableBody.innerHTML = '';
+            
+            const flatData = [];
+            
+            data.countries.forEach(country => {
+                data.years.forEach(year => {
+                    const gdp = data.gdp_growth[year]?.[country];
+                    const inf = data.inflation[year]?.[country];
+                    const status = data.economic_status[year]?.[country];
+                    
+                    if (gdp !== undefined && inf !== undefined) {
+                        flatData.push({
+                            country: country,
+                            year: year,
+                            gdp: gdp,
+                            inflation: inf,
+                            status: status
+                        });
+                    }
+                });
+            });
+            
+            // Sort by country and year
+            flatData.sort((a, b) => {
+                if (a.country === b.country) {
+                    return b.year - a.year; // Descending year
+                }
+                return a.country.localeCompare(b.country);
+            });
+            
+            flatData.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                const countryCell = document.createElement('td');
+                countryCell.className = 'px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900';
+                countryCell.textContent = item.country;
+                
+                const yearCell = document.createElement('td');
+                yearCell.className = 'px-4 py-3 whitespace-nowrap text-sm text-gray-500';
+                yearCell.textContent = item.year;
+                
+                const gdpCell = document.createElement('td');
+                gdpCell.className = 'px-4 py-3 whitespace-nowrap text-sm';
+                gdpCell.textContent = item.gdp.toFixed(2);
+                if (item.gdp > 0) gdpCell.classList.add('text-green-600');
+                if (item.gdp < 0) gdpCell.classList.add('text-red-600');
+                
+                const inflationCell = document.createElement('td');
+                inflationCell.className = 'px-4 py-3 whitespace-nowrap text-sm';
+                inflationCell.textContent = item.inflation.toFixed(2);
+                if (item.inflation > 5) inflationCell.classList.add('text-red-600');
+                
+                const statusCell = document.createElement('td');
+                statusCell.className = 'px-4 py-3 whitespace-nowrap text-sm';
+                
+                let statusBadgeClass = '';
+                if (item.status === 'booming') statusBadgeClass = 'bg-green-100 text-green-800';
+                if (item.status === 'stable') statusBadgeClass = 'bg-blue-100 text-blue-800';
+                if (item.status === 'shrinking') statusBadgeClass = 'bg-red-100 text-red-800';
+                
+                statusCell.innerHTML = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadgeClass}">${item.status}</span>`;
+                
+                row.appendChild(countryCell);
+                row.appendChild(yearCell);
+                row.appendChild(gdpCell);
+                row.appendChild(inflationCell);
+                row.appendChild(statusCell);
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Enhanced insights generation with better data validation
+        function generateInsights(stats, data) {
+            try {
+                console.log("Generating insights with data:", data ? "Available" : "Not available");
+                console.log("Stats available:", stats ? "Yes" : "No");
+                
+                // Add debug for data structure
+                debugDataStructure(data);
+                
+                // Find top booming economy
+                const boomingCountries = Object.entries(stats?.booming_pct || {});
+                console.log("Booming countries data points:", boomingCountries.length);
+                
+                if (boomingCountries.length > 0) {
+                    const topBooming = boomingCountries.sort((a, b) => b[1] - a[1])[0];
+                    document.getElementById('topBoomingEconomy').textContent = 
+                        `${topBooming[0]} (${topBooming[1]}%)`;
+                } else {
+                    document.getElementById('topBoomingEconomy').textContent = 'No data available';
+                }
+                
+                // Calculate volatility (standard deviation of GDP growth)
+                const volatility = {};
+                
+                if (data?.countries && data?.years && data?.gdp_growth) {
+                    console.log("Processing volatility for countries:", data.countries.length);
+                    
+                    data.countries.forEach(country => {
+                        const gdpValues = [];
+                        
+                        data.years.forEach(year => {
+                            // Handle both string and number year keys
+                            const yearAsString = year.toString();
+                            const gdp = data.gdp_growth[yearAsString]?.[country] || data.gdp_growth[year]?.[country];
+                            
+                            if (gdp !== undefined && gdp !== null) {
+                                gdpValues.push(gdp);
+                            }
+                        });
+                        
+                        console.log(`Country ${country}: ${gdpValues.length} GDP data points`);
+                        
+                        if (gdpValues.length > 1) { // Need at least 2 values for std dev
+                            const mean = gdpValues.reduce((a, b) => a + b, 0) / gdpValues.length;
+                            const variance = gdpValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / gdpValues.length;
+                            volatility[country] = Math.sqrt(variance);
+                        }
+                    });
+                    
+                    // Find most volatile economy
+                    const volatileCountries = Object.entries(volatility);
+                    console.log("Volatility calculated for countries:", volatileCountries.length);
+                    
+                    if (volatileCountries.length > 0) {
+                        const mostVolatile = volatileCountries.sort((a, b) => b[1] - a[1])[0];
+                        document.getElementById('mostVolatileEconomy').textContent = 
+                            `${mostVolatile[0]} (±${mostVolatile[1].toFixed(1)}%)`;
+                    } else {
+                        document.getElementById('mostVolatileEconomy').textContent = 'No data available';
+                    }
+                        
+                    // Find most stable economy
+                    if (volatileCountries.length > 0) {
+                        const mostStable = volatileCountries.sort((a, b) => a[1] - b[1])[0];
+                        document.getElementById('mostStableEconomy').textContent = 
+                            `${mostStable[0]} (±${mostStable[1].toFixed(1)}%)`;
+                    } else {
+                        document.getElementById('mostStableEconomy').textContent = 'No data available';
+                    }
+                } else {
+                    console.error("Missing required data for insights calculation");
+                    document.getElementById('mostVolatileEconomy').textContent = 'No data available';
+                    document.getElementById('mostStableEconomy').textContent = 'No data available';
+                }
+            } catch (error) {
+                console.error('Error generating insights:', error);
+                document.getElementById('topBoomingEconomy').textContent = 'Error calculating';
+                document.getElementById('mostVolatileEconomy').textContent = 'Error calculating';
+                document.getElementById('mostStableEconomy').textContent = 'Error calculating';
+            }
+        }
+
+        // Enhanced debug function to understand the data structure
+        function debugDataStructure(data) {
+            console.log("Examining data structure:");
+            if (data) {
+                console.log("Keys in data object:", Object.keys(data));
+                if (data.gdp_growth) {
+                    console.log("Type of gdp_growth:", typeof data.gdp_growth);
+                    console.log("Keys in gdp_growth:", Object.keys(data.gdp_growth));
+                    
+                    // Check the first year's structure
+                    const firstYear = Object.keys(data.gdp_growth)[0];
+                    if (firstYear) {
+                        console.log(`Structure of gdp_growth['${firstYear}']:`, data.gdp_growth[firstYear]);
+                    }
+                }
+                
+                if (data.countries && data.countries.length > 0) {
+                    const firstCountry = data.countries[0];
+                    console.log(`Testing access for first country (${firstCountry}):`);
+                    if (data.years && data.years.length > 0) {
+                        data.years.forEach(year => {
+                            const yearKey = year.toString();
+                            const directAccess = data.gdp_growth[year]?.[firstCountry];
+                            const stringAccess = data.gdp_growth[yearKey]?.[firstCountry];
+                            console.log(`Year ${year}: direct=${directAccess}, string=${stringAccess}`);
+                        });
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
