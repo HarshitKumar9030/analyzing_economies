@@ -273,52 +273,88 @@
         function createGdpTrendChart(country, data) {
             try {
                 console.log("Creating GDP trend chart for:", country);
-                
-                // Add this line to debug data structure
-                debugDataStructure(data);
-                
                 const years = data.years || [];
                 const gdpValues = [];
                 const inflationValues = [];
                 
-                // Process data with corrected structure handling
+                // Process data with correct structure (country->year)
                 years.forEach(year => {
-                    // Try multiple ways to access the data
-                    let gdp = null;
-                    let inf = null;
+                    const yearKey = year.toString(); // Convert to string for object key
                     
-                    // First check if data structure is year->country
-                    if (data.gdp_growth && data.gdp_growth[year]) {
-                        gdp = data.gdp_growth[year][country];
-                    }
+                    // Access as country->year (correct structure)
+                    const gdp = data.gdp_growth[country]?.[yearKey];
+                    const inf = data.inflation[country]?.[yearKey];
                     
-                    // Then check if it's country->year
-                    if (gdp === undefined || gdp === null) {
-                        if (data.gdp_growth && data.gdp_growth[country]) {
-                            gdp = data.gdp_growth[country][year];
-                        }
-                    }
-                    
-                    // Same for inflation
-                    if (data.inflation && data.inflation[year]) {
-                        inf = data.inflation[year][country];
-                    }
-                    
-                    if (inf === undefined || inf === null) {
-                        if (data.inflation && data.inflation[country]) {
-                            inf = data.inflation[country][year];
-                        }
-                    }
-                    
-                    gdpValues.push(gdp);
-                    inflationValues.push(inf);
+                    gdpValues.push(gdp !== undefined && gdp !== null ? gdp : null);
+                    inflationValues.push(inf !== undefined && inf !== null ? inf : null);
                 });
 
-                console.log(`Data points found for ${country}: GDP=${gdpValues.filter(v => v !== null && v !== undefined).length}, Inflation=${inflationValues.filter(v => v !== null && v !== undefined).length}`);
+                console.log(`Data points for ${country}: GDP=${gdpValues.filter(v => v !== null).length}, Inflation=${inflationValues.filter(v => v !== null).length}`);
                 
-                // Rest of your chart creation code...
-            }
-            catch (error) {
+                const ctx = document.getElementById('gdpTrendChart').getContext('2d');
+                if (window.gdpChart instanceof Chart) {
+                    window.gdpChart.destroy();
+                }
+                
+                window.gdpChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: [
+                            {
+                                label: 'GDP Growth Rate',
+                                data: gdpValues,
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                tension: 0.1,
+                                fill: true
+                            },
+                            {
+                                label: 'Inflation Rate',
+                                data: inflationValues,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                tension: 0.1,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: 'Percentage (%)'
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Year'
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${country} - GDP Growth vs. Inflation`,
+                                font: {
+                                    size: 16
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
                 console.error("Error creating GDP trend chart:", error);
             }
         }
@@ -389,24 +425,20 @@
             });
         }
 
+        // Update scatter chart to use correct data structure
         function createScatterChart(data) {
             try {
                 const scatterData = [];
-                const ctx = document.getElementById('scatterChart').getContext('2d');
                 
-                // Destroy the existing chart if it exists
-                if (window.scatterChart instanceof Chart) {
-                    window.scatterChart.destroy();
-                }
-                
-                if (data.countries && data.years && data.gdp_growth && data.inflation && data.economic_status) {
+                if (data.countries && data.years) {
                     data.countries.forEach(country => {
                         data.years.forEach(year => {
-                            // Convert year to string if it's a number
-                            const yearKey = typeof year === 'number' ? year.toString() : year;
-                            const gdp = data.gdp_growth[yearKey]?.[country];
-                            const inf = data.inflation[yearKey]?.[country];
-                            const status = data.economic_status[yearKey]?.[country];
+                            const yearKey = year.toString();
+                            
+                            // Access with correct structure (country->year)
+                            const gdp = data.gdp_growth[country]?.[yearKey];
+                            const inf = data.inflation[country]?.[yearKey];
+                            const status = data.economic_status[country]?.[yearKey];
                             
                             if (gdp !== undefined && gdp !== null && inf !== undefined && inf !== null) {
                                 scatterData.push({
@@ -419,108 +451,41 @@
                             }
                         });
                     });
-
-                    // Group data by status
-                    const boomingData = scatterData.filter(d => d.status === 'booming');
-                    const stableData = scatterData.filter(d => d.status === 'stable');
-                    const shrinkingData = scatterData.filter(d => d.status === 'shrinking');
-                    const unknownData = scatterData.filter(d => 
-                        d.status !== 'booming' && d.status !== 'stable' && d.status !== 'shrinking');
-
-                    // Create the new chart
+                    
+                    const ctx = document.getElementById('scatterChart').getContext('2d');
+                    if (window.scatterChart instanceof Chart) {
+                        window.scatterChart.destroy();
+                    }
+                    
                     window.scatterChart = new Chart(ctx, {
                         type: 'scatter',
                         data: {
-                            datasets: [{
-                                label: 'Booming',
-                                data: boomingData,
-                                backgroundColor: 'rgba(75, 192, 192, 0.8)',
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                            }, {
-                                label: 'Stable',
-                                data: stableData,
-                                backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                            }, {
-                                label: 'Shrinking',
-                                data: shrinkingData,
-                                backgroundColor: 'rgba(255, 99, 132, 0.8)',
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                            }, {
-                                label: 'Unknown',
-                                data: unknownData,
-                                backgroundColor: 'rgba(180, 180, 180, 0.8)',
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                            }]
+                            datasets: [
+                                {
+                                    label: 'Booming',
+                                    data: scatterData.filter(d => d.status === 'booming'),
+                                    backgroundColor: 'rgba(75, 192, 192, 0.8)'
+                                },
+                                {
+                                    label: 'Stable',
+                                    data: scatterData.filter(d => d.status === 'stable'),
+                                    backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                                },
+                                {
+                                    label: 'Shrinking',
+                                    data: scatterData.filter(d => d.status === 'shrinking'),
+                                    backgroundColor: 'rgba(255, 99, 132, 0.8)'
+                                }
+                            ]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                tooltip: {
-                                    callbacks: {
-                                        label: (context) => {
-                                            const point = context.raw;
-                                            return `${point.country} (${point.year}): GDP ${point.x.toFixed(1)}%, Inf ${point.y.toFixed(1)}%`;
-                                        }
-                                    }
-                                },
-                                legend: {
-                                    position: 'top',
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    suggestedMin: -5,
-                                    suggestedMax: 10,
-                                    title: {
-                                        display: true,
-                                        text: 'GDP Growth Rate (%)'
-                                    },
-                                    grid: {
-                                        color: 'rgba(0, 0, 0, 0.05)'
-                                    }
-                                },
-                                y: {
-                                    suggestedMin: 0,
-                                    suggestedMax: 15,
-                                    title: {
-                                        display: true,
-                                        text: 'Inflation Rate (%)'
-                                    },
-                                    grid: {
-                                        color: 'rgba(0, 0, 0, 0.05)'
-                                    }
-                                }
-                            }
+                            maintainAspectRatio: false
                         }
                     });
-                } else {
-                    // Display error message if data is missing
-                    ctx.canvas.style.display = 'none';
-                    const container = ctx.canvas.parentNode;
-                    if (!container.querySelector('.error-message')) {
-                        const errorMessage = document.createElement('p');
-                        errorMessage.className = 'error-message text-red-500 text-center mt-10';
-                        errorMessage.textContent = 'Cannot create scatter plot: missing data';
-                        container.appendChild(errorMessage);
-                    }
                 }
             } catch (error) {
-                console.error('Error creating scatter chart:', error);
-                const ctx = document.getElementById('scatterChart');
-                ctx.style.display = 'none';
-                const container = ctx.parentNode;
-                if (!container.querySelector('.error-message')) {
-                    const errorMessage = document.createElement('p');
-                    errorMessage.className = 'error-message text-red-500 text-center mt-10';
-                    errorMessage.textContent = 'Error creating scatter plot';
-                    container.appendChild(errorMessage);
-                }
+                console.error("Error creating scatter chart:", error);
             }
         }
 

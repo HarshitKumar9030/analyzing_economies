@@ -11,12 +11,12 @@
               precision    recall  f1-score   support
 
      booming       1.00      0.97      0.98        33
-   shrinking       1.00      1.00      1.00        23
-      stable       0.99      1.00      0.99        82
+     shrinking       1.00      1.00      1.00        23
+     stable       0.99      1.00      0.99        82
 
-    accuracy                           0.99       138
-   macro avg       1.00      0.99      0.99       138
-weighted avg       0.99      0.99      0.99       138
+     accuracy                           0.99       138
+     macro avg       1.00      0.99      0.99       138
+     weighted avg       0.99      0.99      0.99       138
 
 
 ## Feature Importance
