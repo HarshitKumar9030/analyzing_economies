@@ -38,8 +38,6 @@ def add_features(df):
     df['gdp_3yr_trend'] = 0.0
     df['inf_3yr_trend'] = 0.0
     df['growth_stability'] = 0.0
-    
-    # We're still calculating these but not using them in the model
     df['prev_gdp_growth'] = 0.0
     df['prev_inflation'] = 0.0
     df['gdp_growth_change'] = 0.0
@@ -91,28 +89,6 @@ def add_features(df):
     
     return df
 
-# Function to create sample data if needed
-def create_sample_data():
-    # Create a sample dataset similar to what we'd expect
-    countries = ['US', 'China', 'Japan', 'Germany', 'UK']
-    years = range(2000, 2024)
-    
-    data = []
-    for country in countries:
-        for year in years:
-            gdp = np.random.normal(2.5, 2.0)  # Mean 2.5%, std dev 2%
-            inflation = np.random.normal(2.0, 1.0)  # Mean 2%, std dev 1%
-            
-            data.append({
-                'country': country,
-                'year': year,
-                'gdp_growth_rate': gdp,
-                'inflation_rate': inflation,
-                'economic_status': classify_economy({'gdp_growth_rate': gdp, 'inflation_rate': inflation})
-            })
-    
-    return pd.DataFrame(data)
-
 # Load or generate data
 try:
     data = pd.read_csv(data_path)
@@ -126,19 +102,22 @@ try:
     print("Preparing features for model evaluation...")
     data = add_features(data)
     
-    # IMPORTANT: Changed to use only 7 features
-    feature_columns = ['gdp_growth_rate', 'inflation_rate', 'growth_inflation_ratio', 
-                       'economic_health', 'gdp_3yr_trend', 'inf_3yr_trend', 'growth_stability']
-    
     # Define feature set and target
-    X = data[feature_columns]  # Now using only 7 features
+    X = data[['gdp_growth_rate', 'inflation_rate', 'growth_inflation_ratio', 
+              'economic_health', 'prev_gdp_growth', 'prev_inflation', 'gdp_growth_change',
+              'gdp_3yr_trend', 'inf_3yr_trend', 'growth_stability']]
     y = data['economic_status']
     
-    # Always train a new model with the 7 features
-    print("Training a new model with 7 features...")
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X, y)
-    print("Model training complete")
+    if os.path.exists(model_path):
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        print("Successfully loaded model")
+    else:
+        print("Model not found, training a new one...")
+        # Create and train model
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model.fit(X, y)
+        print("Model training complete")
         
 except FileNotFoundError as e:
     print(f"Error: {e}")
@@ -147,12 +126,10 @@ except FileNotFoundError as e:
     # Feature engineering for sample data
     data = add_features(data)
     
-    # IMPORTANT: Changed to use only 7 features
-    feature_columns = ['gdp_growth_rate', 'inflation_rate', 'growth_inflation_ratio', 
-                       'economic_health', 'gdp_3yr_trend', 'inf_3yr_trend', 'growth_stability']
-    
     # Create and train model on the sample data
-    X = data[feature_columns]  # Using only the 7 features
+    X = data[['gdp_growth_rate', 'inflation_rate', 'growth_inflation_ratio', 
+              'economic_health', 'prev_gdp_growth', 'prev_inflation', 'gdp_growth_change',
+              'gdp_3yr_trend', 'inf_3yr_trend', 'growth_stability']]
     y = data['economic_status']
     
     model = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -166,6 +143,12 @@ print(f"Target variable distribution: {y.value_counts().to_dict()}")
 # Evaluate the model
 X_scaled = StandardScaler().fit_transform(X)
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.3, random_state=42)
+
+# If model was loaded but not trained on this data, retrain on X_train, y_train
+if not hasattr(model, 'feature_names_in_') or len(model.feature_names_in_) != X.shape[1]:
+    print("Retraining model to match current feature set...")
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
 print("Model Performance:")
@@ -223,7 +206,7 @@ report = f"""
 
 ## Overview
 - **Dataset**: Economic indicators for 20 countries from 2000-2023
-- **Features**: GDP growth rate, inflation rate, and derived metrics (7 features total)
+- **Features**: GDP growth rate, inflation rate, and derived metrics
 - **Target**: Economic status (booming, stable, or shrinking)
 - **Model**: Random Forest Classifier
 
@@ -242,7 +225,8 @@ report = f"""
 2. **Feature Engineering**: Created derived metrics including:
    - Growth-inflation ratio
    - Economic health (GDP growth - inflation)
-   - 3-year trend analysis for GDP and inflation
+   - Year-over-year changes in growth and inflation
+   - 3-year trend analysis
    - Growth stability metrics
 3. **Classification**: 
    - Booming: GDP growth ≥ 3% with inflation < 5%
@@ -258,4 +242,3 @@ with open(report_path, 'w', encoding='utf-8') as f:
     f.write(report)
 
 print(f"Report saved to {report_path}")
-print("\nModel now uses 7 features and is compatible with the application")

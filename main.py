@@ -550,6 +550,26 @@ def predict_future(country):
 def technical_docs():
     return render_template('technical_docs.html')
 
+# Add this diagnostic function to your main.py file
+@app.route('/api/model-info', methods=['GET'])
+def model_info():
+    """API endpoint to debug model feature information"""
+    try:
+        # Load the model
+        with open('data/economic_model.pkl', 'rb') as f:
+            model = pickle.load(f)
+            
+        feature_info = {
+            "expected_features": list(model.feature_names_in_) if hasattr(model, 'feature_names_in_') else "Unknown",
+            "feature_count": len(model.feature_names_in_) if hasattr(model, 'feature_names_in_') else "Unknown",
+            "model_type": str(type(model)),
+            "n_features_in_": model.n_features_in_ if hasattr(model, 'n_features_in_') else "Unknown"
+        }
+        
+        return jsonify(feature_info)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 if __name__ == '__main__':
     # Use environment port if available (Heroku sets this)
     port = int(os.environ.get('PORT', 5000))
