@@ -44,8 +44,8 @@ The core prediction model classifies economic status into three categories:
 
 ```bash
 # Clone the repository
-git clone https://github.com/harshitkumar9030/economy-model.git
-cd economy-model
+git clone https://github.com/harshitkumar9030/analyzing_economies.git
+cd alanyzing_economies
 
 # Create and activate virtual environment
 python -m venv venv
