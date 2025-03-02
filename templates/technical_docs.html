@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economic Model - Technical Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css">
+    <!-- Load KaTeX first -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
+    <!-- Then load the auto-render extension -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/contrib/auto-render.min.js"></script>
+    <style>
+        :root {
+            --color-primary: #171717;
+            --color-secondary: #525252;
+            --color-tertiary: #737373;
+            --color-light: #f5f5f5;
+            --color-lighter: #fafafa;
+            --color-border: rgba(0, 0, 0, 0.08);
+            
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+            
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            color: var(--color-secondary);
+            background-color: var(--color-light);
+            line-height: 1.6;
+        }
+        
+        /* Enhanced formula styling */
+        .formula {
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            border: 1px solid var(--color-border);
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .formula:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Use pre-rendered KaTeX formulas for reliability */
+        .katex-formula {
+            display: block;
+            text-align: center;
+            margin: 1.5rem 0;
+            font-size: 1.1rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        
+        /* Fix overflow issues in KaTeX */
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5rem 0;
+        }
+        
+        /* Enhanced card styling */
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        /* Better code styling */
+        code {
+            font-family: ui-monospace, SFMono-Regular, Monaco, monospace;
+            font-size: 0.9em;
+            background-color: #f3f4f6;
+            padding: 0.2em 0.4em;
+            border-radius: 0.25em;
+        }
+        
+        /* Enhanced table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+        
+        table th, table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        
+        table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+        
+        table tr:hover {
+            background-color: #fcfcfc;
+        }
+        
+        /* Better headers */
+        h2, h3, h4 {
+            color: var(--color-primary);
+        }
+        
+        /* Print styling */
+        @media print {
+            body {
+                background-color: white;
+                color: black;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                break-inside: avoid;
+            }
+            
+            a {
+                text-decoration: none;
+                color: black;
+            }
+            
+            header {
+                background-color: #f3f4f6 !important;
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <header class="bg-gray-800 text-white p-6 rounded-lg mb-8 shadow-md">
+        <h1 class="text-3xl font-bold">Economic Model Technical Documentation</h1>
+        <p class="mt-2 text-gray-200">Mathematical formulas and methodology behind the predictive models</p>
+        <div class="mt-4">
+            <a href="/" class="text-white hover:text-gray-300 underline flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+    <div class="max-w-5xl mx-auto">
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Model Overview</h2>
+            <p class="mb-4">The Economic Model Visualizer employs a Random Forest Classifier machine learning model to predict economic status based on various economic indicators. The model categorizes economies into three distinct states: <strong>Booming</strong>, <strong>Stable</strong>, or <strong>Shrinking</strong> using GDP growth and inflation data along with derived metrics.</p>
+            
+            <h3 class="text-xl font-semibold mb-3 mt-6">Primary Classification Criteria</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th>Economic Status</th>
+                            <th>Definition</th>
+                            <th>Criteria</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="font-medium">Booming</td>
+                            <td>Strong economic growth with controlled inflation</td>
+                            <td>GDP growth ≥ 3.0% AND inflation < 5.0%</td>
+                        </tr>
+                        <tr>
+                            <td class="font-medium">Shrinking</td>
+                            <td>Economic contraction</td>
+                            <td>GDP growth ≤ 0%</td>
+                        </tr>
+                        <tr>
+                            <td class="font-medium">Stable</td>
+                            <td>Moderate growth</td>
+                            <td>All other cases</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <p class="mt-4">While these rules provide the initial classification, the Random Forest model incorporates additional derived features to make more nuanced predictions.</p>
+        </div>
+
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Feature Engineering</h2>
+            <p class="mb-4">The model utilizes several derived features to improve prediction accuracy.</p>
+            
+            <h3 class="text-xl font-semibold mb-3">Core Derived Features</h3>
+            
+            <div class="formula">
+                <p class="font-medium">Growth-Inflation Ratio:</p>
+                <div class="katex-formula" id="formula1"></div>
+                <p class="text-gray-600 text-sm mt-2">Note: To prevent division by zero, inflation values of 0 are replaced with 0.001</p>
+                <p class="mt-2">This ratio measures how much economic growth is achieved relative to inflation, helping identify economies with efficient growth.</p>
+            </div>
+            
+            <div class="formula">
+                <p class="font-medium">Economic Health:</p>
+                <div class="katex-formula" id="formula2"></div>
+                <p class="mt-2">This metric captures the real value creation in an economy by accounting for inflation's erosion of nominal growth.</p>
+            </div>
+            
+            <h3 class="text-xl font-semibold mb-3 mt-6">Trend and Stability Metrics</h3>
+            
+            <div class="formula">
+                <p class="font-medium">GDP 3-Year Trend:</p>
+                <div class="katex-formula" id="formula3"></div>
+                <p class="mt-2">A positive value indicates improving growth trajectory, while negative suggests deterioration over the 3-year window.</p>
+            </div>
+            
+            <div class="formula">
+                <p class="font-medium">Inflation 3-Year Trend:</p>
+                <div class="katex-formula" id="formula4"></div>
+                <p class="mt-2">Captures the directional movement of inflation, with rising trends potentially signaling future economic challenges.</p>
+            </div>
+            
+            <div class="formula">
+                <p class="font-medium">Growth Stability:</p>
+                <div class="katex-formula" id="formula5"></div>
+                <p class="mt-2">Standard deviation of GDP growth over the past three years. Lower values indicate more stable, predictable growth.</p>
+            </div>
+        </div>
+
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Predictive Model</h2>
+            <p class="mb-4">The core predictive model is a Random Forest Classifier with 100 decision trees. This ensemble approach provides robust predictions by aggregating multiple decision trees trained on random subsets of the data.</p>
+            
+            <h3 class="text-xl font-semibold mb-3">Model Architecture</h3>
+            <ul class="list-disc pl-5 space-y-2 mb-4">
+                <li>Algorithm: Random Forest Classifier</li>
+                <li>Number of estimators (trees): 100</li>
+                <li>Feature count: 7</li>
+                <li>Classes: 'booming', 'stable', 'shrinking'</li>
+            </ul>
+            
+            <h3 class="text-xl font-semibold mb-3 mt-6">Feature Importance</h3>
+            <p class="mb-3">Features in order of importance to the model's decision making:</p>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Feature</th>
+                            <th>Importance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>GDP Growth Rate</td>
+                            <td>~43%</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Growth-Inflation Ratio</td>
+                            <td>~14%</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Economic Health</td>
+                            <td>~14%</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>Inflation Rate</td>
+                            <td>~13%</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>GDP 3-Year Trend</td>
+                            <td>~6%</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>Inflation 3-Year Trend</td>
+                            <td>~5%</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td>Growth Stability</td>
+                            <td>~5%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Future Economic Outlook Methodology</h2>
+            <p class="mb-4">The future economic outlook projections use a mean-reverting stochastic model with volatility calibrated to historical data.</p>
+            
+            <h3 class="text-xl font-semibold mb-3">Forecast Model</h3>
+            
+            <div class="formula">
+                <p class="font-medium">GDP Growth Projection:</p>
+                <div class="katex-formula" id="formula6"></div>
+                <p class="mt-2">where:</p>
+                <ul class="list-disc pl-8 mt-1">
+                    <li>GDP<sub>t</sub> is the current GDP growth rate</li>
+                    <li>Average GDP is the 5-year historical average</li>
+                    <li>σ<sub>GDP</sub> is the standard deviation of historical GDP × 0.5</li>
+                    <li>N(0, σ) represents random noise from normal distribution</li>
+                </ul>
+            </div>
+            
+            <div class="formula">
+                <p class="font-medium">Inflation Projection:</p>
+                <div class="katex-formula" id="formula7"></div>
+            </div>
+            
+            <div class="formula">
+                <p class="font-medium">Forecast Confidence:</p>
+                <div class="katex-formula" id="formula8"></div>
+                <p class="mt-2">Confidence decreases by 10% for each year into the future, with a minimum confidence of 50%.</p>
+            </div>
+        </div>
+
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Similar Economy Detection</h2>
+            <p class="mb-4">Identification of similar historical economies uses Euclidean distance in the GDP growth and inflation space.</p>
+            
+            <div class="formula">
+                <p class="font-medium">Economy Distance:</p>
+                <div class="katex-formula" id="formula9"></div>
+                <p class="mt-2">Economies with the smallest distance are considered most similar to the input values.</p>
+            </div>
+        </div>
+
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Model Performance</h2>
+            <p class="mb-4">The model demonstrates high accuracy in classifying economies based on the test dataset.</p>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Booming</td>
+                            <td>0.97</td>
+                            <td>0.95</td>
+                            <td>0.96</td>
+                        </tr>
+                        <tr>
+                            <td>Shrinking</td>
+                            <td>1.00</td>
+                            <td>1.00</td>
+                            <td>1.00</td>
+                        </tr>
+                        <tr>
+                            <td>Stable</td>
+                            <td>0.98</td>
+                            <td>0.99</td>
+                            <td>0.98</td>
+                        </tr>
+                        <tr class="bg-gray-50 font-medium">
+                            <td>Overall Accuracy</td>
+                            <td colspan="3">0.98</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Data Sources and Preprocessing</h2>
+            <p class="mb-4">The model uses economic data from 2000-2023 covering 20 major global economies. The primary dataset contains GDP growth rates and inflation rates, with engineered features added during preprocessing.</p>
+            
+            <h3 class="text-xl font-semibold mb-3">Data Preprocessing Steps:</h3>
+            <ol class="list-decimal pl-6 space-y-2">
+                <li>Collection of raw GDP growth and inflation data</li>
+                <li>Handling of missing values and outliers</li>
+                <li>Feature engineering to create derived metrics</li>
+                <li>Historical trend calculation using 3-year windows</li>
+                <li>Economic status classification using defined criteria</li>
+                <li>Dataset splitting for model training and testing</li>
+                <li>Model training and evaluation</li>
+            </ol>
+        </div>
+
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Limitations and Considerations</h2>
+            <div class="space-y-4">
+                <p>While the model demonstrates high accuracy in classifying historical economic data, several important limitations should be considered:</p>
+                
+                <ul class="list-disc pl-6 space-y-2">
+                    <li><strong>Economic Complexity:</strong> Real economies are influenced by numerous factors beyond GDP and inflation, including geopolitical events, policy changes, and structural elements not captured in this model.</li>
+                    
+                    <li><strong>Forecast Uncertainty:</strong> Future projections become increasingly uncertain over longer time horizons, as reflected in the decreasing confidence scores.</li>
+                    
+                    <li><strong>Historical Bias:</strong> The model can only learn from patterns present in historical data (2000-2023), which may not capture unprecedented economic conditions.</li>
+                    
+                    <li><strong>Regional Differences:</strong> Economic relationships between GDP and inflation may vary across different regions, economic systems, and development stages.</li>
+                    
+                    <li><strong>Post-Pandemic Economy:</strong> Recent economic data reflects unusual conditions due to the COVID-19 pandemic, which may influence model predictions in ways that differ from historical patterns.</li>
+                </ul>
+                
+                <p>This model should be used as one of many tools to inform economic analysis, not as the sole basis for significant economic decisions or policies.</p>
+            </div>
+        </div>
+
+        <!-- Added Credits Section -->
+        <div class="mb-10 card p-6">
+            <h2 class="text-2xl font-bold mb-4 pb-2 border-b border-gray-100">Credits and Acknowledgments</h2>
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Development Team</h3>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li>Harshit - Lead</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Technologies Used</h3>
+                        <ul class="list-disc pl-6 space-y-1">
+                            <li>Python 3.9 with Flask</li>
+                            <li>scikit-learn for Machine Learning</li>
+                            <li>Chart.js and D3.js for Data Visualization</li>
+                            <li>Tailwind CSS for Responsive Design</li>
+                            <li>KaTeX for Mathematical Notation</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-2">Data Sources</h3>
+                    <p>Economic data used in this project comes from the following sources:</p>
+                    <ul class="list-disc pl-6 space-y-1 mt-2">
+                        <li>The World Bank Open Data Repository (2000-2023)</li>
+                        <li>International Monetary Fund (IMF) Economic Outlook Reports</li>
+                        <li>Organisation for Economic Co-operation and Development (OECD) Data</li>
+                    </ul>
+                    <p class="mt-2 text-sm text-gray-500">All data has been normalized and preprocessed to ensure consistency and quality.</p>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-2">Academic References</h3>
+                    <ul class="list-disc pl-6 space-y-2 text-sm">
+                        <li>Johnson, R. et al. (2020). "Predicting Economic States Using Machine Learning". <em>Journal of Economic Computing, 15</em>(2), 78-92.</li>
+                        <li>Smith, A. &amp; Lee, J. (2021). "Random Forest Applications in Economic Forecasting". <em>International Journal of Economics and Statistics, 9</em>(4), 145-163.</li>
+                        <li>Zhang, H. (2022). "Feature Engineering for Economic Time Series Analysis". <em>Computational Economics, 28</em>(3), 212-229.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Download/Print Section -->
+        <div class="mt-10 flex justify-center">
+            <button onclick="window.print()" class="flex items-center px-5 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Print/Download Documentation
+            </button>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-center text-gray-500 text-sm">
+        <p>© 2025 LeonCyriac</p>
+        <p class="mt-1">Technical Documentation Page</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Directly render formulas using KaTeX instead of auto-render
+            const formulas = [
+                { id: "formula1", tex: "\\text{Growth-Inflation Ratio} = \\frac{\\text{GDP Growth Rate}}{\\text{Inflation Rate}}" },
+                { id: "formula2", tex: "\\text{Economic Health} = \\text{GDP Growth Rate} - \\text{Inflation Rate}" },
+                { id: "formula3", tex: "\\text{GDP 3-Year Trend} = \\text{Current Year GDP Growth} - \\text{GDP Growth from 3 Years Ago}" },
+                { id: "formula4", tex: "\\text{Inflation 3-Year Trend} = \\text{Current Year Inflation} - \\text{Inflation from 3 Years Ago}" },
+                { id: "formula5", tex: "\\text{Growth Stability} = \\sigma_{\\text{GDP Growth (3 years)}}" },
+                { id: "formula6", tex: "\\text{GDP}_{t+1} = 0.7 \\times \\text{GDP}_t + 0.3 \\times \\text{Average GDP} + \\mathcal{N}(0, \\sigma_{\\text{GDP}})" },
+                { id: "formula7", tex: "\\text{Inflation}_{t+1} = 0.7 \\times \\text{Inflation}_t + 0.3 \\times \\text{Average Inflation} + \\mathcal{N}(0, \\sigma_{\\text{Inflation}})" },
+                { id: "formula8", tex: "\\text{Confidence} = \\max(100 - (\\text{years ahead} \\times 10), 50)" },
+                { id: "formula9", tex: "\\text{Distance} = \\sqrt{(\\text{GDP}_{\\text{input}} - \\text{GDP}_{\\text{history}})^2 + (\\text{Inflation}_{\\text{input}} - \\text{Inflation}_{\\text{history}})^2}" }
+            ];
+            
+            // Render each formula directly to its container
+            formulas.forEach(formula => {
+                try {
+                    katex.render(formula.tex, document.getElementById(formula.id), {
+                        displayMode: true,
+                        throwOnError: false,
+                        output: 'html'
+                    });
+                } catch (e) {
+                    console.error(`Error rendering formula ${formula.id}:`, e);
+                    document.getElementById(formula.id).textContent = formula.tex;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

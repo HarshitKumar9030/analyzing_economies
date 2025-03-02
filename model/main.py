@@ -7,25 +7,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 import os
+import pickle
 
 # Load the economic indicators data
 data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
 data_path = os.path.join(data_dir, 'economic_indicators.csv')
-data = pd.read_csv(data_path)
-
-# Data preprocessing
-data = data.dropna()  # Remove rows with missing values
-
-# Feature engineering
-data['growth_inflation_ratio'] = data['gdp_growth_rate'] / data['inflation_rate'].replace(0, 0.001)
-data['economic_health'] = data['gdp_growth_rate'] - data['inflation_rate'] 
-
-# Create country-year lag features
-data = data.sort_values(['country', 'year'])
-data['prev_gdp_growth'] = data.groupby('country')['gdp_growth_rate'].shift(1)
-data['prev_inflation'] = data.groupby('country')['inflation_rate'].shift(1)
-data['gdp_growth_change'] = data['gdp_growth_rate'] - data['prev_gdp_growth']
-data = data.dropna()  # Remove rows with NaN from lag creation
+model_path = os.path.join(data_dir, 'economic_model.pkl')
 
 # Define economic status (target variable)
 def classify_economy(row):
@@ -36,26 +23,133 @@ def classify_economy(row):
     else:
         return 'stable'
 
-data['economic_status'] = data.apply(classify_economy, axis=1)
+# Feature engineering function
+def add_features(df):
+    """Add engineered features to the dataframe"""
+    # Safety check to prevent division by zero
+    df['growth_inflation_ratio'] = df['gdp_growth_rate'] / df['inflation_rate'].replace(0, 0.001)
+    df['economic_health'] = df['gdp_growth_rate'] - df['inflation_rate']
+    
+    # Add trend features
+    countries = df['country'].unique()
+    years = sorted(df['year'].unique())
+    
+    # Initialize new columns
+    df['gdp_3yr_trend'] = 0.0
+    df['inf_3yr_trend'] = 0.0
+    df['growth_stability'] = 0.0
+    df['prev_gdp_growth'] = 0.0
+    df['prev_inflation'] = 0.0
+    df['gdp_growth_change'] = 0.0
+    
+    for country in countries:
+        country_data = df[df['country'] == country].sort_values('year')
+        
+        # Add previous year values and calculate changes
+        for i, year in enumerate(years):
+            if i > 0:  # Skip the first year
+                current_year_data = country_data[country_data['year'] == year]
+                prev_year_data = country_data[country_data['year'] == years[i-1]]
+                
+                if not current_year_data.empty and not prev_year_data.empty:
+                    prev_gdp = prev_year_data.iloc[0]['gdp_growth_rate']
+                    prev_inf = prev_year_data.iloc[0]['inflation_rate']
+                    curr_gdp = current_year_data.iloc[0]['gdp_growth_rate']
+                    
+                    # Update the values
+                    idx = df[(df['country'] == country) & (df['year'] == year)].index
+                    if not idx.empty:
+                        df.loc[idx, 'prev_gdp_growth'] = prev_gdp
+                        df.loc[idx, 'prev_inflation'] = prev_inf
+                        df.loc[idx, 'gdp_growth_change'] = curr_gdp - prev_gdp
+        
+        # Calculate 3-year trends and stability
+        for i, year in enumerate(years):
+            if i >= 2:  # Need at least 3 years of data
+                past_3yrs = country_data[country_data['year'].isin(years[i-2:i+1])]
+                
+                if len(past_3yrs) == 3:
+                    # GDP 3-year trend (positive = improving, negative = deteriorating)
+                    gdp_vals = past_3yrs['gdp_growth_rate'].values
+                    gdp_trend = gdp_vals[2] - gdp_vals[0]  # Latest minus oldest
+                    
+                    # Inflation 3-year trend
+                    inf_vals = past_3yrs['inflation_rate'].values
+                    inf_trend = inf_vals[2] - inf_vals[0]
+                    
+                    # Growth stability (lower = more stable)
+                    stability = gdp_vals.std()
+                    
+                    # Update the values
+                    idx = df[(df['country'] == country) & (df['year'] == year)].index
+                    if not idx.empty:
+                        df.loc[idx, 'gdp_3yr_trend'] = gdp_trend
+                        df.loc[idx, 'inf_3yr_trend'] = inf_trend
+                        df.loc[idx, 'growth_stability'] = stability
+    
+    return df
 
-# Prepare features and target
-X = data[['gdp_growth_rate', 'inflation_rate', 'economic_health', 
-          'growth_inflation_ratio', 'prev_gdp_growth', 'prev_inflation',
-          'gdp_growth_change']]
-y = data['economic_status']
+# Load or generate data
+try:
+    data = pd.read_csv(data_path)
+    print(f"Successfully loaded data with {len(data)} rows")
+    
+    if 'economic_status' not in data.columns:
+        print("Adding economic_status classification to data")
+        data['economic_status'] = data.apply(classify_economy, axis=1)
+    
+    # Always perform feature engineering to ensure X and y are defined
+    print("Preparing features for model evaluation...")
+    data = add_features(data)
+    
+    # Define feature set and target
+    X = data[['gdp_growth_rate', 'inflation_rate', 'growth_inflation_ratio', 
+              'economic_health', 'prev_gdp_growth', 'prev_inflation', 'gdp_growth_change',
+              'gdp_3yr_trend', 'inf_3yr_trend', 'growth_stability']]
+    y = data['economic_status']
+    
+    if os.path.exists(model_path):
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        print("Successfully loaded model")
+    else:
+        print("Model not found, training a new one...")
+        # Create and train model
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model.fit(X, y)
+        print("Model training complete")
+        
+except FileNotFoundError as e:
+    print(f"Error: {e}")
+    data = create_sample_data()
+    
+    # Feature engineering for sample data
+    data = add_features(data)
+    
+    # Create and train model on the sample data
+    X = data[['gdp_growth_rate', 'inflation_rate', 'growth_inflation_ratio', 
+              'economic_health', 'prev_gdp_growth', 'prev_inflation', 'gdp_growth_change',
+              'gdp_3yr_trend', 'inf_3yr_trend', 'growth_stability']]
+    y = data['economic_status']
+    
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X, y)
+    print("Model trained on sample data")
 
-# Scale the features
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.3, random_state=42)
-
-# Train a Random Forest model
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
+# Now X and y are defined regardless of which code path was taken
+print(f"Feature matrix shape: {X.shape}")
+print(f"Target variable distribution: {y.value_counts().to_dict()}")
 
 # Evaluate the model
+X_scaled = StandardScaler().fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.3, random_state=42)
+
+# If model was loaded but not trained on this data, retrain on X_train, y_train
+if not hasattr(model, 'feature_names_in_') or len(model.feature_names_in_) != X.shape[1]:
+    print("Retraining model to match current feature set...")
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+
 y_pred = model.predict(X_test)
 print("Model Performance:")
 print(classification_report(y_test, y_pred))
@@ -101,8 +195,6 @@ plt.tight_layout()
 plt.savefig(os.path.join(data_dir, 'country_booming_pct.png'))
 
 # Save the model and report
-import pickle
-model_path = os.path.join(data_dir, 'economic_model.pkl')
 with open(model_path, 'wb') as f:
     pickle.dump(model, f)
 
@@ -134,6 +226,8 @@ report = f"""
    - Growth-inflation ratio
    - Economic health (GDP growth - inflation)
    - Year-over-year changes in growth and inflation
+   - 3-year trend analysis
+   - Growth stability metrics
 3. **Classification**: 
    - Booming: GDP growth ≥ 3% with inflation < 5%
    - Shrinking: GDP growth ≤ 0%
