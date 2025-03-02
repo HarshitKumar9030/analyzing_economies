@@ -1,48 +1,94 @@
+# Economic Model Visualizer
 
-# Economic Model Report
+![Python](https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-2.0+-green?style=for-the-badge&logo=flask&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.0+-orange?style=for-the-badge&logo=scikit-learn&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-2.2+-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-## Overview
-- **Dataset**: Economic indicators for 20 countries from 2000-2023
-- **Features**: GDP growth rate, inflation rate, and derived metrics
-- **Target**: Economic status (booming, stable, or shrinking)
-- **Model**: Random Forest Classifier
+## 📊 Overview
 
-## Model Performance
-              precision    recall  f1-score   support
+Economic Model Visualizer is an interactive web application for analyzing economic trends and predicting economic status using machine learning. The tool provides data visualization, predictive analytics, and forecasting capabilities for economic indicators.
 
-     booming       1.00      0.97      0.98        33
-     shrinking       1.00      1.00      1.00        23
-     stable       0.99      1.00      0.99        82
+## ✨ Features
 
-     accuracy                           0.99       138
-     macro avg       1.00      0.99      0.99       138
-     weighted avg       0.99      0.99      0.99       138
+- **Interactive Data Visualization** - Explore economic trends across multiple countries
+- **ML-Powered Predictions** - Classify economic status using Random Forest models
+- **Future Economic Outlook** - Project GDP growth and inflation trends
+- **Country Comparison** - Analyze economic similarities between nations
+- **Responsive Design** - Optimized for desktop and mobile devices
 
+## 🤖 Model Overview
 
-## Feature Importance
-                  Feature  Importance
-         0         gdp_growth_rate    0.432944
-         3  growth_inflation_ratio    0.146464
-         2         economic_health    0.143360
-         1          inflation_rate    0.128742
-         6       gdp_growth_change    0.063337
-         5          prev_inflation    0.043406
-         4         prev_gdp_growth    0.041748
+The core prediction model classifies economic status into three categories:
 
-## Country Analysis
-- Countries with highest percentage of booming years: China, Korea, Rep., India
-- Countries with highest percentage of shrinking years: Italy, Mexico, Spain
+| Status | Definition | Criteria |
+|--------|------------|----------|
+| **Booming** | Strong growth with controlled inflation | GDP growth ≥ 3.0% AND inflation < 5.0% |
+| **Shrinking** | Economic contraction | GDP growth ≤ 0% |
+| **Stable** | Moderate growth | All other cases |
 
-## Methodology
-1. **Data Preprocessing**: Removed missing values and scaled features
-2. **Feature Engineering**: Created derived metrics including:
-   - Growth-inflation ratio
-   - Economic health (GDP growth - inflation)
-   - Year-over-year changes in growth and inflation
-3. **Classification**: 
-   - Booming: GDP growth ≥ 3% with inflation < 5%
-   - Shrinking: GDP growth ≤ 0%
-   - Stable: All other economies
+### Key Features in Prediction
 
-## Visualizations
-Generated visualizations for confusion matrix, feature importance, and country-specific analysis.
+- **Growth-Inflation Ratio**: Measures economic efficiency by comparing growth to inflation
+- **Economic Health**: Captures real value creation accounting for inflation
+- **3-Year Trends**: Analyzes growth and inflation trajectories over time
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.9+
+- pip
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/economy-model.git
+cd economy-model
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python main.py
+```
+
+## 📊 Usage Examples
+
+### Making Economic Predictions
+
+1. Enter GDP growth and inflation values
+2. Click "Predict Economic Status"
+3. View prediction results and probability breakdown
+4. Analyze similar historical economies
+
+### Exploring Forecasts
+
+1. Select a country and forecast horizon
+2. Generate economic projections
+3. Visualize future economic status timeline
+4. Review confidence intervals
+
+## 📝 Technical Documentation
+
+For detailed information on the mathematical models and methodology, see the [Technical Documentation](http://localhost:5000/technical-docs) page in the application.
+
+## 👥 Contributors
+
+- Harshit Kumar - Lead Developer
+- Leon Cyriac - UI/UX Design
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🙏 Acknowledgments
+
+- World Bank Open Data Repository
+- International Monetary Fund (IMF) Economic Outlook Reports
+- Organisation for Economic Co-operation and Development (OECD) Data
