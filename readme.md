@@ -1,9 +1,9 @@
 # Economic Model Visualizer
 
-![Python](https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge&logo=python&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-2.0+-green?style=for-the-badge&logo=flask&logoColor=white)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-1.0+-orange?style=for-the-badge&logo=scikit-learn&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-2.2+-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-3.0+-green?style=for-the-badge&logo=flask&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.6+-orange?style=for-the-badge&logo=scikit-learn&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4+-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
 ## 📊 Overview
 
@@ -80,8 +80,7 @@ For detailed information on the mathematical models and methodology, see the [Te
 
 ## 👥 Contributors
 
-- Harshit Kumar - Lead Developer
-- Leon Cyriac - UI/UX Design
+- Harshit - Lead Developer
 
 ## 📄 License
 
